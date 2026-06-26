@@ -9,8 +9,13 @@ import { Badge } from '@/components/ui/badge'
 import { Download, FileText, Loader2, AlertCircle } from 'lucide-react'
 import { WARDS, ISSUE_TYPES } from '@/lib/data'
 import { generateComplaintLetter } from '@/lib/gemini'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function ComplaintLetterPage() {
+  const slideUpVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  }
   const [citizenName, setCitizenName] = useState('')
   const [ward, setWard] = useState('')
   const [issueType, setIssueType] = useState('')
@@ -76,7 +81,7 @@ Include proper letterhead format, subject line, and closing. End with space for 
     <>
       <NavHeader />
       <main className="min-h-screen bg-background">
-        <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl px-4 pt-28 pb-12 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h1 className="mb-2 text-4xl font-bold text-foreground">Generate Complaint Letter</h1>
             <p className="text-muted-foreground">
@@ -86,8 +91,8 @@ Include proper letterhead format, subject line, and closing. End with space for 
 
           <div className="grid gap-8 lg:grid-cols-2">
             {/* Form */}
-            <div>
-              <Card className="border-border/40 bg-card/50 p-8">
+            <motion.div initial="hidden" animate="visible" variants={slideUpVariants}>
+              <Card className="border-border/40 bg-card/50 p-8 backdrop-blur-md shadow-lg">
                 <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold text-foreground">
                   <FileText className="h-5 w-5" />
                   Complaint Details
@@ -195,12 +200,18 @@ Include proper letterhead format, subject line, and closing. End with space for 
                   </Button>
                 </form>
               </Card>
-            </div>
+            </motion.div>
 
             {/* Letter Preview */}
+            <AnimatePresence mode="wait">
             {(letterContent || isGenerating) && (
-              <div>
-                <Card className="border-border/40 bg-card/50 p-8 max-h-[800px] overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Card className="border-border/40 bg-card/50 p-8 max-h-[800px] overflow-y-auto backdrop-blur-md shadow-lg">
                   <div className="mb-6 flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-foreground">Letter Preview</h2>
                     {letterContent && !isGenerating && (
@@ -250,13 +261,21 @@ Include proper letterhead format, subject line, and closing. End with space for 
                     </>
                   )}
                 </Card>
-              </div>
+              </motion.div>
             )}
+            </AnimatePresence>
           </div>
 
           {/* Info Section */}
+          <AnimatePresence mode="wait">
           {!letterContent && !isGenerating && (
-            <Card className="mt-8 border-border/40 border-l-4 border-l-primary bg-primary/5 p-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.5 }}
+            >
+            <Card className="mt-8 border-border/40 border-l-4 border-l-primary bg-card/50 backdrop-blur-md shadow-lg p-6">
               <h3 className="mb-4 font-semibold text-foreground">About This Letter</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>• AI-powered letter generation using Google Gemini</li>
@@ -266,7 +285,9 @@ Include proper letterhead format, subject line, and closing. End with space for 
                 <li>• Helps ensure your issue receives proper attention</li>
               </ul>
             </Card>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
       </main>
 

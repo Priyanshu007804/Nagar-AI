@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { motion } from 'framer-motion'
+import gsap from 'gsap'
 import { NavHeader } from '@/components/nav-header'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -40,6 +42,23 @@ type Zone = {
 }
 
 export default function DashboardPage() {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4 }
+    }
+  }
+
   const [reports, setReports] = useState<Report[]>([])
   const [stats, setStats] = useState<Stats>({
     totalReports: 0,
@@ -109,6 +128,48 @@ export default function DashboardPage() {
     return () => unsubscribe()
   }, []) // Remove heatmapZones.length from dependency to avoid loop
 
+  const heatmapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (heatmapZones.length === 0) return;
+
+    const ctx = gsap.context(() => {
+      // High risk pulse
+      gsap.fromTo('.heatmap-cell-high', 
+        { boxShadow: '0 0 8px #ef4444' },
+        {
+          boxShadow: '0 0 20px #ef4444',
+          duration: 1.5,
+          ease: 'power1.inOut',
+          repeat: -1,
+          yoyo: true,
+          stagger: {
+            each: 0.1,
+            from: 'random'
+          }
+        }
+      );
+
+      // Medium risk pulse
+      gsap.fromTo('.heatmap-cell-medium', 
+        { boxShadow: '0 0 8px #f59e0b' },
+        {
+          boxShadow: '0 0 20px #f59e0b',
+          duration: 2,
+          ease: 'power1.inOut',
+          repeat: -1,
+          yoyo: true,
+          stagger: {
+            each: 0.15,
+            from: 'random'
+          }
+        }
+      );
+    }, heatmapRef);
+
+    return () => ctx.revert(); // Clean up GSAP animations on component unmount
+  }, [heatmapZones])
+
   // Effect to fetch Gemini predictions when reports load/change significantly
   useEffect(() => {
     if (reports.length > 0 && predictions.length === 0 && !isPredicting) {
@@ -175,7 +236,7 @@ export default function DashboardPage() {
     <>
       <NavHeader />
       <main className="min-h-screen bg-background">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 pt-28 pb-12 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h1 className="mb-2 text-4xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground">
@@ -184,69 +245,88 @@ export default function DashboardPage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-border/40 bg-card/50 p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Reports</p>
-                  <p className="mt-2 text-3xl font-bold text-foreground flex items-center">
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> : stats.totalReports.toLocaleString()}
-                  </p>
+          <motion.div 
+            className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+          >
+            <motion.div variants={itemVariants}>
+              <Card className="h-full border-border/40 bg-card/50 p-6 transition-colors hover:bg-card/80 backdrop-blur-md shadow-lg">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Reports</p>
+                    <p className="mt-2 text-3xl font-bold text-foreground flex items-center">
+                      {isLoading ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> : stats.totalReports.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-primary/10 p-3">
+                    <TrendingUp className="h-6 w-6 text-primary" />
+                  </div>
                 </div>
-                <div className="rounded-lg bg-primary/10 p-3">
-                  <TrendingUp className="h-6 w-6 text-primary" />
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </motion.div>
 
-            <Card className="border-border/40 bg-card/50 p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Resolved</p>
-                  <p className="mt-2 text-3xl font-bold text-green-400 flex items-center">
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin text-green-400/50" /> : stats.resolved.toLocaleString()}
-                  </p>
+            <motion.div variants={itemVariants}>
+              <Card className="h-full border-border/40 bg-card/50 p-6 transition-colors hover:bg-card/80 backdrop-blur-md shadow-lg">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Resolved</p>
+                    <p className="mt-2 text-3xl font-bold text-green-400 flex items-center">
+                      {isLoading ? <Loader2 className="h-5 w-5 animate-spin text-green-400/50" /> : stats.resolved.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-green-900/20 p-3">
+                    <CheckCircle2 className="h-6 w-6 text-green-400" />
+                  </div>
                 </div>
-                <div className="rounded-lg bg-green-900/20 p-3">
-                  <CheckCircle2 className="h-6 w-6 text-green-400" />
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </motion.div>
 
-            <Card className="border-border/40 bg-card/50 p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                  <p className="mt-2 text-3xl font-bold text-yellow-400 flex items-center">
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin text-yellow-400/50" /> : stats.pending.toLocaleString()}
-                  </p>
+            <motion.div variants={itemVariants}>
+              <Card className="h-full border-border/40 bg-card/50 p-6 transition-colors hover:bg-card/80 backdrop-blur-md shadow-lg">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pending</p>
+                    <p className="mt-2 text-3xl font-bold text-yellow-400 flex items-center">
+                      {isLoading ? <Loader2 className="h-5 w-5 animate-spin text-yellow-400/50" /> : stats.pending.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-yellow-900/20 p-3">
+                    <Clock className="h-6 w-6 text-yellow-400" />
+                  </div>
                 </div>
-                <div className="rounded-lg bg-yellow-900/20 p-3">
-                  <Clock className="h-6 w-6 text-yellow-400" />
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </motion.div>
 
-            <Card className="border-border/40 bg-card/50 p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Critical</p>
-                  <p className="mt-2 text-3xl font-bold text-red-400 flex items-center">
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin text-red-400/50" /> : stats.critical.toLocaleString()}
-                  </p>
+            <motion.div variants={itemVariants}>
+              <Card className="h-full border-border/40 bg-card/50 p-6 transition-colors hover:bg-card/80 backdrop-blur-md shadow-lg">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Critical</p>
+                    <p className="mt-2 text-3xl font-bold text-red-400 flex items-center">
+                      {isLoading ? <Loader2 className="h-5 w-5 animate-spin text-red-400/50" /> : stats.critical.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-red-900/20 p-3">
+                    <AlertCircle className="h-6 w-6 text-red-400" />
+                  </div>
                 </div>
-                <div className="rounded-lg bg-red-900/20 p-3">
-                  <AlertCircle className="h-6 w-6 text-red-400" />
-                </div>
-              </div>
-            </Card>
-          </div>
+              </Card>
+            </motion.div>
+          </motion.div>
 
-          <div className="grid gap-8 lg:grid-cols-3">
+          <motion.div 
+            className="grid gap-8 lg:grid-cols-3"
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+          >
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-2 space-y-8 min-w-0">
               {/* Predictive Heatmap */}
-              <Card className="border-border/40 bg-card/50 p-6">
+              <motion.div variants={itemVariants}>
+              <Card className="border-border/40 bg-card/50 p-6 backdrop-blur-md shadow-lg">
                 <div className="flex items-center gap-2 mb-6">
                   <Zap className="h-5 w-5 text-primary" />
                   <h2 className="text-xl font-bold text-foreground">
@@ -254,13 +334,14 @@ export default function DashboardPage() {
                   </h2>
                 </div>
                 
-                <div className="space-y-2 mb-6">
-                  {heatmapZones.map((row, rowIdx) => (
-                    <div key={rowIdx} className="grid grid-cols-6 gap-2">
+                <div className="overflow-x-auto pb-4 mb-2">
+                  <div ref={heatmapRef} className="space-y-2 min-w-[320px]">
+                    {heatmapZones.map((row, rowIdx) => (
+                      <div key={rowIdx} className="grid grid-cols-6 gap-2">
                       {row.map((zone, colIdx) => (
                         <div
                           key={colIdx}
-                          className={`rounded border p-2 text-center transition-all hover:scale-105 cursor-pointer ${getRiskColor(
+                          className={`heatmap-cell-${zone.risk} rounded border p-2 text-center transition-all hover:scale-105 cursor-pointer ${getRiskColor(
                             zone.risk
                           )}`}
                           title={`${zone.id} - ${zone.risk} risk`}
@@ -272,6 +353,7 @@ export default function DashboardPage() {
                       ))}
                     </div>
                   ))}
+                </div>
                 </div>
 
                 {/* Gemini AI Predictions */}
@@ -298,9 +380,11 @@ export default function DashboardPage() {
                   )}
                 </div>
               </Card>
+              </motion.div>
 
               {/* Recent Reports Table */}
-              <Card className="border-border/40 bg-card/50 p-6">
+              <motion.div variants={itemVariants}>
+              <Card className="border-border/40 bg-card/50 p-6 backdrop-blur-md shadow-lg">
                 <h2 className="mb-6 text-xl font-bold text-foreground">
                   Recent Reports
                 </h2>
@@ -360,11 +444,12 @@ export default function DashboardPage() {
                   </Table>
                 </div>
               </Card>
+              </motion.div>
             </div>
 
             {/* Ward Leaderboard */}
-            <div>
-              <Card className="border-border/40 bg-card/50 p-6 sticky top-6">
+            <motion.div variants={itemVariants} className="min-w-0">
+              <Card className="border-border/40 bg-card/50 p-6 sticky top-6 backdrop-blur-md shadow-lg">
                 <h2 className="mb-6 text-xl font-bold text-foreground">
                   Ward Performance
                 </h2>
@@ -400,8 +485,8 @@ export default function DashboardPage() {
                   })}
                 </div>
               </Card>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </main>
     </>
